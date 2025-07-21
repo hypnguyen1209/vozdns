@@ -36,16 +36,13 @@ jobs:
 
       - name: Create website structure
         run: |
-          # Create the site directory
           mkdir -p _site
           
-          # Copy files to site directory
           cp README.md _site/index.md
           cp README_VI.md _site/
           cp subdomain.json _site/
           cp server.json _site/
           
-          # Create a simple HTML layout
           cat > _site/_layout.html << 'EOF'
           <!DOCTYPE html>
           <html lang="en">
@@ -131,37 +128,23 @@ jobs:
                   <div class="markdown-body">
           EOF
           
-          # Create index.html from README.md
           echo "Converting README.md to HTML..."
           cat > _site/convert.js << 'EOF'
           const fs = require('fs');
           const { marked } = require('marked');
-          
-          // Read markdown file
           const markdown = fs.readFileSync('index.md', 'utf8');
-          
-          // Convert to HTML
           const html = marked(markdown);
-          
-          // Read layout
           const layout = fs.readFileSync('_layout.html', 'utf8');
-          
-          // Combine layout with content
           const fullHtml = layout + html + '\n                  </div>\n                  <div class="footer">\n                      <p>&copy; 2025 VozDNS. Open source project.</p>\n                  </div>\n              </div>\n          </body>\n          </html>';
-          
-          // Write final HTML
           fs.writeFileSync('index.html', fullHtml);
-          
           console.log('Generated index.html');
           EOF
           
-          # Install marked for markdown conversion
           cd _site
           npm init -y
           npm install marked
           node convert.js
           
-          # Create Vietnamese version
           if [ -f "README_VI.md" ]; then
               node -e "
                 const fs = require('fs');
@@ -175,10 +158,8 @@ jobs:
               "
           fi
           
-          # Clean up
           rm -f _layout.html convert.js package*.json node_modules -rf index.md
           
-          # List generated files
           echo "Generated files:"
           ls -la
 
