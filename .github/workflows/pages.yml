@@ -9,6 +9,15 @@ on:
       - 'subdomain.json'
       - 'server.json'
       - '.github/workflows/pages.yml'
+  pull_request:
+    types: [closed]
+    branches: [ main, master ]
+    paths:
+      - 'README.md'
+      - 'README_VI.md'
+      - 'subdomain.json'
+      - 'server.json'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to Pages
@@ -27,6 +36,8 @@ jobs:
   # Build job
   build:
     runs-on: ubuntu-latest
+    # Only run if it's a push event OR a merged pull request
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -189,6 +200,14 @@ jobs:
       - name: Domain setup notification
         run: |
           echo "🎉 Website deployed successfully!"
+          
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "📋 Deployed from merged PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
+            echo "👤 Merged by: ${{ github.event.pull_request.merged_by.login }}"
+            echo "🔀 Changes from: ${{ github.event.pull_request.user.login }}"
+          fi
+          
+          echo ""
           echo "📋 To use custom domain vozdns.vn, configure these DNS records:"
           echo ""
           echo "CNAME Records:"
