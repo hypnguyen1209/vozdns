@@ -1,0 +1,223 @@
+name: Deploy GitHub Pages to vozdns.vn
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'README.md'
+      - 'README_VI.md'
+      - 'subdomain.json'
+      - 'server.json'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Build job
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Create website structure
+        run: |
+          # Create the site directory
+          mkdir -p _site
+          
+          # Copy files to site directory
+          cp README.md _site/index.md
+          cp README_VI.md _site/
+          cp subdomain.json _site/
+          cp server.json _site/
+          
+          # Create a simple HTML layout
+          cat > _site/_layout.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>VozDNS - Dynamic DNS Client</title>
+              <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.4.0/github-markdown-light.min.css">
+              <style>
+                  body {
+                      font-family: -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;
+                      line-height: 1.5;
+                      color: #1f2328;
+                      background-color: #ffffff;
+                      margin: 0;
+                      padding: 20px;
+                  }
+                  .container {
+                      max-width: 1012px;
+                      margin: 0 auto;
+                      padding: 0 16px;
+                  }
+                  .markdown-body {
+                      box-sizing: border-box;
+                      min-width: 200px;
+                      max-width: 980px;
+                      margin: 0 auto;
+                      padding: 45px;
+                  }
+                  .header {
+                      text-align: center;
+                      padding: 20px 0;
+                      border-bottom: 1px solid #d1d9e0;
+                      margin-bottom: 30px;
+                  }
+                  .nav {
+                      text-align: center;
+                      margin: 20px 0;
+                  }
+                  .nav a {
+                      margin: 0 15px;
+                      color: #0969da;
+                      text-decoration: none;
+                      font-weight: 500;
+                  }
+                  .nav a:hover {
+                      text-decoration: underline;
+                  }
+                  pre {
+                      background-color: #f6f8fa;
+                      border-radius: 6px;
+                      padding: 16px;
+                      overflow: auto;
+                  }
+                  code {
+                      background-color: rgba(175,184,193,0.2);
+                      padding: 0.2em 0.4em;
+                      border-radius: 6px;
+                      font-size: 85%;
+                  }
+                  .footer {
+                      text-align: center;
+                      padding: 40px 0;
+                      border-top: 1px solid #d1d9e0;
+                      margin-top: 40px;
+                      color: #656d76;
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <div class="header">
+                      <h1>🌐 VozDNS</h1>
+                      <p>Secure Dynamic DNS Client</p>
+                  </div>
+                  <div class="nav">
+                      <a href="/">Home</a>
+                      <a href="/subdomain.json">Subdomains</a>
+                      <a href="/server.json">Server Info</a>
+                      <a href="/README_VI.html">Tiếng Việt</a>
+                      <a href="https://github.com/hypnguyen1209/vozdns">GitHub</a>
+                  </div>
+                  <div class="markdown-body">
+          EOF
+          
+          # Create index.html from README.md
+          echo "Converting README.md to HTML..."
+          cat > _site/convert.js << 'EOF'
+          const fs = require('fs');
+          const { marked } = require('marked');
+          
+          // Read markdown file
+          const markdown = fs.readFileSync('index.md', 'utf8');
+          
+          // Convert to HTML
+          const html = marked(markdown);
+          
+          // Read layout
+          const layout = fs.readFileSync('_layout.html', 'utf8');
+          
+          // Combine layout with content
+          const fullHtml = layout + html + '\n                  </div>\n                  <div class="footer">\n                      <p>&copy; 2025 VozDNS. Open source project.</p>\n                  </div>\n              </div>\n          </body>\n          </html>';
+          
+          // Write final HTML
+          fs.writeFileSync('index.html', fullHtml);
+          
+          console.log('Generated index.html');
+          EOF
+          
+          # Install marked for markdown conversion
+          cd _site
+          npm init -y
+          npm install marked
+          node convert.js
+          
+          # Create Vietnamese version
+          if [ -f "README_VI.md" ]; then
+              node -e "
+                const fs = require('fs');
+                const { marked } = require('marked');
+                const markdown = fs.readFileSync('README_VI.md', 'utf8');
+                const html = marked(markdown);
+                const layout = fs.readFileSync('_layout.html', 'utf8');
+                const fullHtml = layout + html + '\n                  </div>\n                  <div class=\"footer\">\n                      <p>&copy; 2025 VozDNS. Dự án mã nguồn mở.</p>\n                  </div>\n              </div>\n          </body>\n          </html>';
+                fs.writeFileSync('README_VI.html', fullHtml);
+                console.log('Generated README_VI.html');
+              "
+          fi
+          
+          # Clean up
+          rm -f _layout.html convert.js package*.json node_modules -rf index.md
+          
+          # List generated files
+          echo "Generated files:"
+          ls -la
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: '_site'
+
+  # Deployment job
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Custom domain setup (requires manual DNS configuration)
+  notify:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: success()
+    steps:
+      - name: Domain setup notification
+        run: |
+          echo "🎉 Website deployed successfully!"
+          echo "📋 To use custom domain vozdns.vn, configure these DNS records:"
+          echo ""
+          echo "CNAME Records:"
+          echo "vozdns.vn -> hypnguyen1209.github.io"
+          echo "www.vozdns.vn -> hypnguyen1209.github.io"
+          echo ""
+          echo "Or A Records (if CNAME not possible):"
+          echo "vozdns.vn -> 185.199.108.153"
+          echo "vozdns.vn -> 185.199.109.153"
+          echo "vozdns.vn -> 185.199.110.153" 
+          echo "vozdns.vn -> 185.199.111.153"
+          echo ""
+          echo "📁 Also add a CNAME file to the repository root with content: vozdns.vn"

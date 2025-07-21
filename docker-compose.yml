@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  vozdns-client:
+    image: ghcr.io/hypnguyen1209/vozdns:latest
+    container_name: vozdns-client
+    restart: unless-stopped
+    volumes:
+      - ./config:/home/appuser/.vozdns:ro
+    command: ["-start"]
+    environment:
+      - TZ=UTC
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

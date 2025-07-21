@@ -1,0 +1,40 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+README_VI.md
+*.md
+
+# Build artifacts
+dist/
+*.tar.gz
+*.zip
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# CI/CD
+.github/
+
+# Config examples (keep actual configs out)
+config/
+server-config/
+*.example
+
+# Logs
+*.log
