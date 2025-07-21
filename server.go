@@ -15,7 +15,6 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-
 type CloudflareRecord struct {
 	ID      string `json:"id"`
 	Type    string `json:"type"`
@@ -23,7 +22,6 @@ type CloudflareRecord struct {
 	Content string `json:"content"`
 	Proxied bool   `json:"proxied"`
 }
-
 
 func isAuthorizedDomain(domain string) (bool, string, error) {
 	resp, err := http.Get("https://vozdns.vn/subdomain.json")
@@ -47,23 +45,22 @@ func isAuthorizedDomain(domain string) (bool, string, error) {
 	return false, "", nil
 }
 
-
 func getCloudflareRecord(config *ServerConfig, domain string) (*CloudflareRecord, error) {
-	
+
 	if config.AuthKey == "(Your API Token)" || config.ZoneID == "(Can be found in the \"Overview\" tab of your domain)" {
 		fmt.Printf("Using test credentials - simulating DNS record check for %s\n", domain)
-		
+
 		return &CloudflareRecord{
 			ID:      "test-record-id",
 			Type:    "A",
 			Name:    domain,
-			Content: "0.0.0.0", 
+			Content: "0.0.0.0",
 			Proxied: false,
 		}, nil
 	}
 
 	url := fmt.Sprintf("https://api.cloudflare.com/client/v4/zones/%s/dns_records?name=%s&type=A", config.ZoneID, domain)
-	
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)
@@ -83,25 +80,21 @@ func getCloudflareRecord(config *ServerConfig, domain string) (*CloudflareRecord
 		return nil, fmt.Errorf("cloudflare API returned status %d", resp.StatusCode)
 	}
 
-	
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %v", err)
 	}
 
-	
 	if !gjson.GetBytes(body, "success").Bool() {
 		errors := gjson.GetBytes(body, "errors").Array()
 		return nil, fmt.Errorf("cloudflare API error: %v", errors)
 	}
 
-	
 	records := gjson.GetBytes(body, "result").Array()
 	if len(records) == 0 {
-		return nil, nil 
+		return nil, nil
 	}
 
-	
 	firstRecord := records[0]
 	record := &CloudflareRecord{
 		ID:      firstRecord.Get("id").String(),
@@ -114,15 +107,13 @@ func getCloudflareRecord(config *ServerConfig, domain string) (*CloudflareRecord
 	return record, nil
 }
 
-
 func updateCloudflareRecord(config *ServerConfig, domain, ip string, proxied bool) error {
-	
+
 	if config.AuthKey == "(Your API Token)" || config.ZoneID == "(Can be found in the \"Overview\" tab of your domain)" {
 		fmt.Printf("Using test credentials - simulating DNS update for %s -> %s (proxied: %v)\n", domain, ip, proxied)
-		return nil 
+		return nil
 	}
 
-	
 	existingRecord, err := getCloudflareRecord(config, domain)
 	if err != nil {
 		return err
@@ -139,11 +130,11 @@ func updateCloudflareRecord(config *ServerConfig, domain, ip string, proxied boo
 	}
 
 	if existingRecord != nil {
-		
+
 		url = fmt.Sprintf("https://api.cloudflare.com/client/v4/zones/%s/dns_records/%s", config.ZoneID, existingRecord.ID)
 		method = "PUT"
 	} else {
-		
+
 		url = fmt.Sprintf("https://api.cloudflare.com/client/v4/zones/%s/dns_records", config.ZoneID)
 		method = "POST"
 	}
@@ -168,13 +159,11 @@ func updateCloudflareRecord(config *ServerConfig, domain, ip string, proxied boo
 	}
 	defer resp.Body.Close()
 
-	
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read response: %v", err)
 	}
 
-	
 	if !gjson.GetBytes(body, "success").Bool() {
 		errors := gjson.GetBytes(body, "errors").Array()
 		return fmt.Errorf("cloudflare API error: %v", errors)
@@ -183,11 +172,9 @@ func updateCloudflareRecord(config *ServerConfig, domain, ip string, proxied boo
 	return nil
 }
 
-
 func startServer() {
 	fmt.Println("Starting VozDNS server...")
 
-	
 	config, err := loadServerConfig()
 	if err != nil {
 		fmt.Printf("Error loading config: %v\n", err)
@@ -196,10 +183,8 @@ func startServer() {
 
 	fmt.Printf("Server starting on %s\n", config.Listen)
 
-	
 	router := ming.New()
 
-	
 	router.Post("/verify", func(ctx *fasthttp.RequestCtx) {
 		var verifyReq VerifyRequest
 		if err := json.Unmarshal(ctx.PostBody(), &verifyReq); err != nil {
@@ -209,7 +194,6 @@ func startServer() {
 			return
 		}
 
-		
 		verifyResp := VerifyResponse{
 			Domain:    verifyReq.Domain,
 			ProxySSL:  verifyReq.ProxySSL,
@@ -217,7 +201,6 @@ func startServer() {
 			PublicKey: config.PublicKey,
 		}
 
-		
 		authorized, clientPublicKey, err := isAuthorizedDomain(verifyReq.Domain)
 		if err != nil {
 			ctx.SetStatusCode(fasthttp.StatusInternalServerError)
@@ -225,7 +208,7 @@ func startServer() {
 			ctx.WriteString(`{"error": "Error checking authorization"}`)
 			return
 		}
-		
+
 		if !authorized {
 			ctx.SetStatusCode(fasthttp.StatusUnauthorized)
 			ctx.SetContentType("application/json")
@@ -233,7 +216,6 @@ func startServer() {
 			return
 		}
 
-		
 		respData, err := json.Marshal(verifyResp)
 		if err != nil {
 			ctx.SetStatusCode(fasthttp.StatusInternalServerError)
@@ -262,7 +244,6 @@ func startServer() {
 		ctx.WriteString(encryptedResp)
 	})
 
-	
 	router.Post("/register", func(ctx *fasthttp.RequestCtx) {
 		var registerReq RegisterRequest
 		if err := json.Unmarshal(ctx.PostBody(), &registerReq); err != nil {
@@ -272,7 +253,6 @@ func startServer() {
 			return
 		}
 
-		
 		serverPrivateKey, err := decodePrivateKey(config.PrivateKey)
 		if err != nil {
 			ctx.SetStatusCode(fasthttp.StatusInternalServerError)
@@ -298,7 +278,6 @@ func startServer() {
 			return
 		}
 
-		
 		authorized, _, err := isAuthorizedDomain(registerData.Domain)
 		if err != nil {
 			ctx.SetStatusCode(fasthttp.StatusInternalServerError)
@@ -313,7 +292,6 @@ func startServer() {
 			return
 		}
 
-		
 		currentRecord, err := getCloudflareRecord(config, registerData.Domain)
 		if err != nil {
 			fmt.Printf("Error checking DNS record for %s: %v\n", registerData.Domain, err)
@@ -323,7 +301,6 @@ func startServer() {
 			return
 		}
 
-		
 		if currentRecord == nil || currentRecord.Content != registerData.IP {
 			err = updateCloudflareRecord(config, registerData.Domain, registerData.IP, registerData.ProxySSL)
 			if err != nil {
@@ -342,17 +319,14 @@ func startServer() {
 		ctx.WriteString(`{"status": "success"}`)
 	})
 
-	
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	
 	go func() {
 		fmt.Printf("Server listening on %s\n", config.Listen)
 		router.Run(config.Listen)
 	}()
 
-	
 	<-quit
 	fmt.Println("\nShutting down server...")
 	fmt.Println("Server stopped gracefully")

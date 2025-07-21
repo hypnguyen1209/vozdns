@@ -13,7 +13,6 @@ import (
 	"time"
 )
 
-
 func getPublicIP() (string, error) {
 	resp, err := http.Get("https://icanhazip.com")
 	if err != nil {
@@ -30,7 +29,6 @@ func getPublicIP() (string, error) {
 	return ip, nil
 }
 
-
 func getServerInfo() (*ServerInfo, error) {
 	resp, err := http.Get("https://vozdns.vn/server.json")
 	if err != nil {
@@ -46,7 +44,6 @@ func getServerInfo() (*ServerInfo, error) {
 
 	return &serverInfo, nil
 }
-
 
 func verifyWithServer(serverURL string, config *ClientConfig, ip string) (*VerifyResponse, error) {
 	verifyReq := VerifyRequest{
@@ -70,13 +67,11 @@ func verifyWithServer(serverURL string, config *ClientConfig, ip string) (*Verif
 		return nil, fmt.Errorf("server returned status: %d", resp.StatusCode)
 	}
 
-	
 	encryptedData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	
 	clientPrivateKey, err := decodePrivateKey(config.PrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding private key: %v", err)
@@ -96,9 +91,8 @@ func verifyWithServer(serverURL string, config *ClientConfig, ip string) (*Verif
 	return &verifyResp, nil
 }
 
-
 func registerWithServer(serverURL string, config *ClientConfig, ip string, serverPublicKey string) error {
-	
+
 	registerData := map[string]interface{}{
 		"domain":    config.Domain,
 		"proxy_ssl": config.ProxySSL,
@@ -110,7 +104,6 @@ func registerWithServer(serverURL string, config *ClientConfig, ip string, serve
 		return err
 	}
 
-	
 	serverPubKey, err := decodePublicKey(serverPublicKey)
 	if err != nil {
 		return fmt.Errorf("error decoding server public key: %v", err)
@@ -121,7 +114,6 @@ func registerWithServer(serverURL string, config *ClientConfig, ip string, serve
 		return fmt.Errorf("error encrypting data: %v", err)
 	}
 
-	
 	reqData, err := json.Marshal(map[string]string{"encrypted_data": encryptedData})
 	if err != nil {
 		return err
@@ -141,11 +133,9 @@ func registerWithServer(serverURL string, config *ClientConfig, ip string, serve
 	return nil
 }
 
-
 func startClient() {
 	fmt.Println("Starting VozDNS client...")
 
-	
 	config, err := loadClientConfig()
 	if err != nil {
 		fmt.Printf("Error loading config: %v\n", err)
@@ -154,24 +144,19 @@ func startClient() {
 
 	fmt.Printf("Loaded config for domain: %s\n", config.Domain)
 
-	
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	
 	ticker := time.NewTicker(10 * time.Minute)
 	defer ticker.Stop()
 
-	
 	runClientCycle(config)
 
 	fmt.Println("VozDNS client started. Press Ctrl+C to stop.")
 
-	
 	for {
 		select {
 		case <-ctx.Done():
@@ -187,11 +172,9 @@ func startClient() {
 	}
 }
 
-
 func runClientCycle(config *ClientConfig) {
 	fmt.Printf("[%s] Starting client cycle...\n", time.Now().Format("2006-01-02 15:04:05"))
 
-	
 	ip, err := getPublicIP()
 	if err != nil {
 		fmt.Printf("Error getting public IP: %v\n", err)
@@ -199,7 +182,6 @@ func runClientCycle(config *ClientConfig) {
 	}
 	fmt.Printf("Public IP: %s\n", ip)
 
-	
 	serverInfo, err := getServerInfo()
 	if err != nil {
 		fmt.Printf("Error getting server info: %v\n", err)
@@ -207,7 +189,6 @@ func runClientCycle(config *ClientConfig) {
 	}
 	fmt.Printf("Server: %s\n", serverInfo.Server)
 
-	
 	verifyResp, err := verifyWithServer(serverInfo.Server, config, ip)
 	if err != nil {
 		fmt.Printf("Error verifying with server: %v\n", err)
@@ -215,7 +196,6 @@ func runClientCycle(config *ClientConfig) {
 	}
 	fmt.Printf("Verification successful, server public key received\n")
 
-	
 	err = registerWithServer(serverInfo.Server, config, ip, verifyResp.PublicKey)
 	if err != nil {
 		fmt.Printf("Error registering with server: %v\n", err)

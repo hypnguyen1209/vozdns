@@ -8,7 +8,6 @@ import (
 	"runtime"
 )
 
-
 func getConfigDir() (string, error) {
 	var homeDir string
 	var err error
@@ -24,8 +23,7 @@ func getConfigDir() (string, error) {
 	}
 
 	configDir := filepath.Join(homeDir, ".vozdns")
-	
-	
+
 	if err = os.MkdirAll(configDir, 0755); err != nil {
 		return "", fmt.Errorf("failed to create config directory: %v", err)
 	}
@@ -33,18 +31,15 @@ func getConfigDir() (string, error) {
 	return configDir, nil
 }
 
-
 func generateClientConfig(domain string) {
 	fmt.Printf("Generating client config for domain: %s\n", domain)
 
-	
 	privateKey, publicKey, err := generateECCKeyPair()
 	if err != nil {
 		fmt.Printf("Error generating key pair: %v\n", err)
 		return
 	}
 
-	
 	privateKeyStr, err := encodePrivateKey(privateKey)
 	if err != nil {
 		fmt.Printf("Error encoding private key: %v\n", err)
@@ -57,7 +52,6 @@ func generateClientConfig(domain string) {
 		return
 	}
 
-	
 	config := ClientConfig{
 		PrivateKey: privateKeyStr,
 		PublicKey:  publicKeyStr,
@@ -65,7 +59,6 @@ func generateClientConfig(domain string) {
 		ProxySSL:   false,
 	}
 
-	
 	configDir, err := getConfigDir()
 	if err != nil {
 		fmt.Printf("Error getting config directory: %v\n", err)
@@ -89,18 +82,15 @@ func generateClientConfig(domain string) {
 	fmt.Printf("Public key: %s\n", publicKeyStr)
 }
 
-
 func generateServerConfig() {
 	fmt.Println("Generating server config...")
 
-	
 	privateKey, publicKey, err := generateECCKeyPair()
 	if err != nil {
 		fmt.Printf("Error generating key pair: %v\n", err)
 		return
 	}
 
-	
 	privateKeyStr, err := encodePrivateKey(privateKey)
 	if err != nil {
 		fmt.Printf("Error encoding private key: %v\n", err)
@@ -113,7 +103,6 @@ func generateServerConfig() {
 		return
 	}
 
-	
 	config := ServerConfig{
 		PrivateKey: privateKeyStr,
 		PublicKey:  publicKeyStr,
@@ -123,7 +112,6 @@ func generateServerConfig() {
 		ZoneID:     "(Can be found in the \"Overview\" tab of your domain)",
 	}
 
-	
 	configPath := "./config.json"
 	configData, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
@@ -140,7 +128,6 @@ func generateServerConfig() {
 	fmt.Printf("Server config generated successfully at: %s\n", configPath)
 	fmt.Println("Please edit the config file and update the Cloudflare credentials.")
 }
-
 
 func loadClientConfig() (*ClientConfig, error) {
 	configDir, err := getConfigDir()
@@ -162,7 +149,6 @@ func loadClientConfig() (*ClientConfig, error) {
 
 	return &config, nil
 }
-
 
 func loadServerConfig() (*ServerConfig, error) {
 	configPath := "./config.json"
