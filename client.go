@@ -57,7 +57,7 @@ func verifyWithServer(serverURL string, config *ClientConfig, ip string) (*Verif
 		return nil, err
 	}
 
-	resp, err := http.Post(fmt.Sprintf("http://%s/verify", serverURL), "application/json", bytes.NewBuffer(reqData))
+	resp, err := http.Post(fmt.Sprintf("%s/verify", serverURL), "application/json", bytes.NewBuffer(reqData))
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func registerWithServer(serverURL string, config *ClientConfig, ip string, serve
 		return err
 	}
 
-	resp, err := http.Post(fmt.Sprintf("http://%s/register", serverURL), "application/json", bytes.NewBuffer(reqData))
+	resp, err := http.Post(fmt.Sprintf("%s/register", serverURL), "application/json", bytes.NewBuffer(reqData))
 	if err != nil {
 		return err
 	}
