@@ -172,6 +172,8 @@ func startClient() {
 	}
 }
 
+var lastIP string
+
 func runClientCycle(config *ClientConfig) {
 	fmt.Printf("[%s] Starting client cycle...\n", time.Now().Format("2006-01-02 15:04:05"))
 
@@ -181,6 +183,11 @@ func runClientCycle(config *ClientConfig) {
 		return
 	}
 	fmt.Printf("Public IP: %s\n", ip)
+
+	if ip == lastIP {
+		fmt.Println("Public IP unchanged, skipping update.")
+		return
+	}
 
 	serverInfo, err := getServerInfo()
 	if err != nil {
@@ -202,4 +209,5 @@ func runClientCycle(config *ClientConfig) {
 		return
 	}
 	fmt.Printf("Registration successful\n")
+	lastIP = ip
 }
