@@ -6,5 +6,9 @@
     {
         "domain": "tungvt.vozdns.vn",
         "publickey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEU8OeG11QeiZLsfuSOP7Tes+F0kRpLH1lUNcO1buWVS18hjhm5S2uWphV2eahez+EsA4be7yIGrKaGF87zm6syw=="
+    },
+    {
+        "domain": "namhh.vozdns.vn",
+        "publickey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEnFpn4UuAA6hD9G3bTBbk2J36KoC76Rc/nKVzOT7MDq1iqVsNScBRVKDO4Ve7PwKBMEBAEVtEvfaDAR7A6I827Q=="
     }
 ]
